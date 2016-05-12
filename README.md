@@ -75,7 +75,8 @@ viewMyModel model =
     [ h2 [] [text "Dank, right?"]
     , input [ type' "text"
             , on "input" ( targetValue `Json.Decode.andThen` \s ->
-                           Json.Decode.succeed (Bounce s) -- plumbing the string
+                           Json.Decode.succeed (DebouncerMsg <| Bounce s)
+                           -- plumbing the string
                          )
             , value model.somethingDank.dankness
             ] []
