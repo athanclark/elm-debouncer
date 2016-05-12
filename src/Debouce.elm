@@ -8,17 +8,32 @@ module Debounce exposing
   )
 
 {-|
+
+This is a delay-based debouncer, where given a _minimum_ delay and an action
+to issue, we'll build a stateful component that will eventually issue the action
+_once_, after being given a slew of requests within the delay timeframe.
+
+
+## Debouncer State
+
 @docs Debouncer
 
 @docs initDebouncer
+
+
+## Starting the Debouncer
+
+@docs DebouncerMsg
+
+
+## Evaluating the Debouncer
+
+@docs updateDebouncer
 
 @docs DebouncerResults
 
 @docs handleDebouncerResults
 
-@docs updateDebouncer
-
-@docs DebouncerMsg
 -}
 
 import Time exposing (Time)
