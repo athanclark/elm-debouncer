@@ -30,18 +30,21 @@ Okay, so here's an example:
 ```elm
 type alias MyModel =
   { somethingDank : Dank
-  , myDebouncer   : Debouncer
+  , myDebouncer   : Debouncer String
   }
+
+-- setting up a debouncer which stagnates String
+-- data changes
 
 initMyModel : MyModel
 initMyModel =
   { somethingDank = ayyLmao
-  , myDebouncer = initDebouncer
+  , myDebouncer   = initDebouncer
   }
   
 type MyAction
   = DankAction DankAction
-  | DebouncerMsg DebouncerMsg
+  | DebouncerMsg (DebouncerMsg String)
   
 updateMyModel : MyAction
              -> MyModel
@@ -56,12 +59,14 @@ updateMyModel action model =
     DebouncerMsg a ->
       let (newDebouncer, eff) = updateDebouncer
                                   (500 * millisecond)
-                                  (DankAction SomeDankAction)
+                                  (\s -> DankAction <| SomeDankAction s)
+                                  -- this action _needs_ a string
                                   a
                                   model.myDebouncer
       in  ( { model | myDebouncer = newDebouncer }
           , Cmd.map (handleDebouncerResults DebouncerMsg) eff
-          )
+          ) -- tie up the system
+      -- note that `eff : DebouncerResults String MyAction`
           
 viewMyModel : MyModel
            -> Html MyAction
@@ -69,7 +74,9 @@ viewMyModel model =
   div []
     [ h2 [] [text "Dank, right?"]
     , input [ type' "text"
-            , on "input" (Json.Decode.succeed Start)
+            , on "input" ( targetValue `Json.Decode.andThen` \s ->
+                           Json.Decode.succeed (Bounce s) -- plumbing the string
+                         )
             , value model.somethingDank.dankness
             ] []
     ]
