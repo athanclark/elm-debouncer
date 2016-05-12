@@ -1,8 +1,5 @@
 # Elm-Debouncer
 
-HEED ALL YEE WHO HATH WANT TO DEBOUNCE STUFF, because it's chill and we
-all know what happens to chill people >_>
-
 Basically the idea is simple, a `Debouncer` is a stateful component
 that manages _when_ an arbitrary action of your own should be issued.
 The `Deboucer` itself is basically the model for the delay, so you
