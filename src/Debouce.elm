@@ -4,7 +4,7 @@ module Debounce exposing
   , DebouncerResults
   , handleDebouncerResults
   , updateDebouncer
-  , DebouncerMsg (Start)
+  , DebouncerMsg (Bounce)
   )
 
 {-|
@@ -44,35 +44,35 @@ import Process
 
 {-| The state of the debouncer
 -}
-type alias Debouncer =
-  { since : Maybe Time
+type alias Debouncer b =
+  { since : Maybe (Time, b)
   }
 
 {-| The initial debouncer
 -}
-initDebouncer : Debouncer
+initDebouncer : Debouncer b
 initDebouncer =
   { since = Nothing
   }
 
-{-| To bounce the debouncer, just make multiple calls to `Start`.
+{-| To bounce the debouncer, just make multiple calls to `Bounce`.
 -}
-type DebouncerMsg
-  = Start
-  | AssignTime Time
+type DebouncerMsg b
+  = Bounce b
+  | Assign b Time
   | Finish Time
 
 {-| Representing either more messages needing to be handled in this component,
     or the message you've been trying to debounce.
 -}
-type DebouncerResults a
-  = More DebouncerMsg
+type DebouncerResults b a
+  = More (DebouncerMsg b)
   | Done a
 
 {-| By being able to convert a `DebouncerMsg` to a message we understand, we
     can turn a whole `DebouncerResults` to a message we understand.
 -}
-handleDebouncerResults : (DebouncerMsg -> a) -> DebouncerResults a -> a
+handleDebouncerResults : (DebouncerMsg b -> a) -> DebouncerResults b a -> a
 handleDebouncerResults f m =
   case m of
     More a -> f a
@@ -81,20 +81,20 @@ handleDebouncerResults f m =
 {-| The main logic of the debouncer.
 -}
 updateDebouncer : Time
-               -> a
-               -> DebouncerMsg
-               -> Debouncer
-               -> (Debouncer, Cmd (DebouncerResults a))
+               -> (b -> a)
+               -> DebouncerMsg b
+               -> Debouncer b
+               -> (Debouncer b, Cmd (DebouncerResults b a))
 updateDebouncer delay mainAction action model =
   case action of
-    Start ->
+    Bounce x ->
       case model.since of
         Nothing ->
           ( model
           , Cmd.batch
               [ Task.perform
                   Debug.crash
-                  (\t -> More <| AssignTime t)
+                  (\t -> More <| Assign x t)
                   Time.now
               , Task.perform
                   Debug.crash
@@ -106,28 +106,29 @@ updateDebouncer delay mainAction action model =
           ( model
           , Task.perform
               Debug.crash
-              (\t -> More <| AssignTime t)
+              (\t -> More <| Assign x t)
               Time.now
           )
-    AssignTime current ->
-      ( { model | since = Just current }
+    Assign x current ->
+      ( { model | since = Just (current, x) }
       , Cmd.none
       )
     Finish current ->
       case model.since of
-        Nothing         -> Debug.crash "Somehow got in forbidden state x_x"
-        Just oldCurrent ->
+        Nothing ->
+          Debug.crash "Somehow got in forbidden state x_x"
+        Just (oldCurrent,x) ->
           let elapsed = current - oldCurrent
-          in  if elapsed < delay
-              then ( model
-                   , Task.perform
-                       Debug.crash
-                       (\t -> More <| Finish t)
-                       <| Process.sleep (delay - elapsed) `Task.andThen` \_ -> Time.now
-                   )
-              else ( initDebouncer
-                   , Task.perform
-                       Debug.crash
-                       (\x -> x)
-                       <| Task.succeed <| Done mainAction
-                   )
+          in if elapsed < delay
+          then ( model
+               , Task.perform
+                   Debug.crash
+                   (\t -> More <| Finish t)
+                   <| Process.sleep (delay - elapsed) `Task.andThen` \_ -> Time.now
+               )
+          else ( initDebouncer
+               , Task.perform
+                   Debug.crash
+                   (\x -> x)
+                   <| Task.succeed <| Done <| mainAction x
+               )
