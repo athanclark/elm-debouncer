@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "summary": "simple method for time-throttling action / message propogation",
     "repository": "https://github.com/athanclark/elm-debouncer.git",
     "license": "BSD3",

@@ -116,7 +116,9 @@ updateDebouncer delay mainAction action model =
     Finish current ->
       case model.since of
         Nothing ->
-          Debug.crash "Somehow got in forbidden state x_x"
+          ( model
+          , Cmd.none
+          ) -- no-op
         Just (oldCurrent,x) ->
           let elapsed = current - oldCurrent
           in if elapsed < delay
