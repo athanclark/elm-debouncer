@@ -1,10 +1,8 @@
 module Debounce exposing
-  ( Debouncer
-  , initDebouncer
-  , DebouncerResults
-  , handleDebouncerResults
-  , updateDebouncer
-  , DebouncerMsg (Bounce)
+  ( Model
+  , init
+  , update
+  , Msg (Bounce)
   )
 
 {-|
@@ -16,23 +14,19 @@ _once_, after being given a slew of requests within the delay timeframe.
 
 ## Debouncer State
 
-@docs Debouncer
+@docs Model
 
-@docs initDebouncer
+@docs init
 
 
 ## Starting the Debouncer
 
-@docs DebouncerMsg
+@docs Msg
 
 
 ## Evaluating the Debouncer
 
-@docs updateDebouncer
-
-@docs DebouncerResults
-
-@docs handleDebouncerResults
+@docs update
 
 -}
 
@@ -42,63 +36,54 @@ import Process
 
 
 
+type alias Elapsed b =
+  { since : Time
+  , data  : Maybe b
+  }
+
+
 {-| The state of the debouncer
 -}
-type alias Debouncer b =
-  { since : Maybe (Time, b)
+type alias Model b =
+  { elapsed : Maybe (Elapsed b)
   }
 
 {-| The initial debouncer
 -}
-initDebouncer : Debouncer b
-initDebouncer =
-  { since = Nothing
+init : Model b
+init =
+  { elapsed = Nothing
   }
 
 {-| To bounce the debouncer, just make multiple calls to `Bounce`.
 -}
-type DebouncerMsg b
-  = Bounce b
-  | Assign b Time
+type Msg b
+  = Bounce (Maybe b -> Maybe b)
+  | Assign (Maybe b -> Maybe b) Time
   | Finish Time
 
-{-| Representing either more messages needing to be handled in this component,
-    or the message you've been trying to debounce.
--}
-type DebouncerResults b a
-  = More (DebouncerMsg b)
-  | Done a
-
-{-| By being able to convert a `DebouncerMsg` to a message we understand, we
-    can turn a whole `DebouncerResults` to a message we understand.
--}
-handleDebouncerResults : (DebouncerMsg b -> a) -> DebouncerResults b a -> a
-handleDebouncerResults f m =
-  case m of
-    More a -> f a
-    Done a -> a
 
 {-| The main logic of the debouncer.
 -}
-updateDebouncer : Time
-               -> (b -> a)
-               -> DebouncerMsg b
-               -> Debouncer b
-               -> (Debouncer b, Cmd (DebouncerResults b a))
-updateDebouncer delay mainAction action model =
+update : Time
+      -> (Maybe b -> Cmd a)
+      -> Msg b
+      -> Model b
+      -> (Model b, Cmd (Result a (Msg b)))
+update delay mainAction action model =
   case action of
     Bounce x ->
-      case model.since of
+      case model.elapsed of
         Nothing ->
           ( model
           , Cmd.batch
               [ Task.perform
                   Debug.crash
-                  (\t -> More <| Assign x t)
+                  (Ok << Assign x)
                   Time.now
               , Task.perform
                   Debug.crash
-                  (\t -> More <| Finish t)
+                  (Ok << Finish)
                   <| Process.sleep delay `Task.andThen` \_ -> Time.now
               ]
           )
@@ -106,31 +91,35 @@ updateDebouncer delay mainAction action model =
           ( model
           , Task.perform
               Debug.crash
-              (\t -> More <| Assign x t)
+              (Ok << Assign x)
               Time.now
           )
-    Assign x current ->
-      ( { model | since = Just (current, x) }
+    Assign f current ->
+      ( { model | elapsed =
+                    case model.elapsed of
+                      Nothing ->
+                        Just { since = current
+                             , data = f Nothing
+                             }
+                      Just elap ->
+                        Just { elap | since = current
+                                    , data  = f elap.data
+                             }
+        }
       , Cmd.none
       )
     Finish current ->
-      case model.since of
+      case model.elapsed of
         Nothing ->
           ( model
           , Cmd.none
           ) -- no-op
-        Just (oldCurrent,x) ->
-          let elapsed = current - oldCurrent
+        Just elap ->
+          let elapsed = current - elap.since
           in if elapsed < delay
           then ( model
-               , Task.perform
-                   Debug.crash
-                   (\t -> More <| Finish t)
-                   <| Process.sleep (delay - elapsed) `Task.andThen` \_ -> Time.now
+               , Cmd.none
                )
-          else ( initDebouncer
-               , Task.perform
-                   Debug.crash
-                   (\x -> x)
-                   <| Task.succeed <| Done <| mainAction x
+          else ( init
+               , Cmd.map Err <| mainAction elap.data
                )
