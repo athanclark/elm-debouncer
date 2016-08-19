@@ -79,15 +79,11 @@ update : Time
 update delay action model =
   case action of
     Bounce x ->
-      case model.elapsed of
-        Nothing ->
-          model ! [ Cmd.map (Err << Assign x) <| performLog Time.now
-                  , Cmd.map (Err << Finish)
-                 <| performLog <| Process.sleep delay `Task.andThen` \_ -> Time.now
-                  ]
-        Just _  ->
-          model ! [ Cmd.map (Err << Assign x) <| performLog Time.now
-                  ]
+        model
+      ! [ Cmd.map (Err << Assign x) <| performLog Time.now
+        , Cmd.map (Err << Finish)
+       <| performLog <| Process.sleep delay `Task.andThen` \_ -> Time.now
+        ]
     Assign x current ->
       { model | elapsed = Just { since = current, cont = x }
       } ! []
@@ -96,6 +92,6 @@ update delay action model =
         Nothing -> model ! []
         Just elap ->
           let elapsed = current - elap.since
-          in if elapsed >= delay
+          in if elapsed < delay
           then model ! []
           else init  ! [ Cmd.map Ok elap.cont ]
