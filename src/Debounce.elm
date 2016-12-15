@@ -89,8 +89,9 @@ update delay action model =
                 ! [ Cmd.map (Err << Assign x) <| performLog Time.now
                   , Cmd.map (Err << Finish) <|
                         performLog <|
-                            Process.sleep delay
+                            (Process.sleep delay
                                 |> Task.andThen (\_ -> Time.now)
+                            )
                   ]
 
         Assign x current ->
