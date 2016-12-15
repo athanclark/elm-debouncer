@@ -65,9 +65,9 @@ type Msg a
     | Finish Time
 
 
-performLog : Task e a -> Cmd a
-performLog =
-    Task.perform (Debug.crash << toString) identity
+performLog : Task Never a -> Cmd a
+performLog task =
+    Task.perform (Debug.crash << toString) (identity task)
 
 
 mkCmd : a -> Cmd a
