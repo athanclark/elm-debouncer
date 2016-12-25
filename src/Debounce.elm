@@ -63,8 +63,8 @@ type Msg a
   | Finish Time
 
 
-performLog : Task e a -> Cmd a
-performLog = Task.perform (Debug.crash << toString) identity
+performLog : Task Never a -> Cmd a
+performLog = Task.perform identity
 
 mkCmd : a -> Cmd a
 mkCmd = performLog << Task.succeed
@@ -82,7 +82,7 @@ update delay action model =
         model
       ! [ Cmd.map (Err << Assign x) <| performLog Time.now
         , Cmd.map (Err << Finish)
-       <| performLog <| Process.sleep delay `Task.andThen` \_ -> Time.now
+       <| performLog <| Task.andThen (\_ -> Time.now) (Process.sleep delay)
         ]
     Assign x current ->
       { model | elapsed = Just { since = current, cont = x }
