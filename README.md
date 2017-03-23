@@ -3,23 +3,23 @@
 Use continutations for deboucing!
 
 ```elm
-import Debouncer
+import Debounce
 import Task exposing (Task)
 
 type Msg
   = PingFoo
   | PungFoo
-  | DebouncerMsg (Debouncer.Msg Msg)
+  | DebouncerMsg (Debounce.Msg Msg)
 
 type alias Model =
   { something   : Foo
-  , myDebouncer : Debouncer.Model Msg
+  , myDebouncer : Debounce.Model Msg
   }
 
 init : Model
 init =
   { something   = initFoo
-  , myDebouncer = Debouncer.init
+  , myDebouncer = Debounce.init
   }
 
 mkCmd : a -> Cmd a
@@ -31,7 +31,7 @@ update : Msg
       -> (Model, Cmd Msg)
 update action model =
   case action of
-    PingFoo -> model ! [mkCmd <| DebouncerMsg <| Debouncer.Bounce <| mkCmd PungFoo]
+    PingFoo -> model ! [mkCmd <| DebouncerMsg <| Debounce.Bounce <| mkCmd PungFoo]
     PungFoo -> pang model ! [] -- the past tense of ping or something
     DebouncerMsg a ->
       let (newDebouncer, eff) = updateDebouncer
