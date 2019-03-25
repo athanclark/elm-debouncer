@@ -1,0 +1,16 @@
+{
+    "type": "package",
+    "name": "athanclark/elm-debouncer",
+    "summary": "simple method for time-throttling action / message propogation",
+    "license": "BSD-3-Clause",
+    "version": "3.0.1",
+    "exposed-modules": [
+        "Debounce"
+    ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
+    "dependencies": {
+        "elm/core": "1.0.0 <= v < 2.0.0",
+        "elm/time": "1.0.0 <= v < 2.0.0"
+    },
+    "test-dependencies": {}
+}
