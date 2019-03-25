@@ -30,11 +30,11 @@ _once_, after being given a slew of requests within the delay timeframe.
 
 import Process
 import Task exposing (Task)
-import Time exposing (Time)
+import Time exposing (Posix, toMillis, utc)
 
 
 type alias Elapsed a =
-    { since : Time
+    { since : Posix
     , cont : Cmd a
     }
 
@@ -58,8 +58,8 @@ init =
 -}
 type Msg a
     = Bounce (Cmd a)
-    | Assign (Cmd a) Time
-    | Finish Time
+    | Assign (Cmd a) Posix
+    | Finish Posix
 
 
 performLog : Task Never a -> Cmd a
@@ -75,11 +75,15 @@ mkCmd =
 {-| The main logic of the debouncer.
 -}
 update :
-    Time
+    Posix
     -> Msg a
     -> Model a
     -> ( Model a, Cmd (Result (Msg a) a) )
 update delay action model =
+    let
+        delayToMillis =
+            toFloat (toMillis utc delay)
+    in
     case action of
         Bounce x ->
             ( model
@@ -87,7 +91,7 @@ update delay action model =
                 [ Cmd.map (Err << Assign x) <| performLog Time.now
                 , Cmd.map (Err << Finish) <|
                     performLog <|
-                        Task.andThen (\_ -> Time.now) (Process.sleep delay)
+                        Task.andThen (\_ -> Time.now) (Process.sleep delayToMillis)
                 ]
             )
 
@@ -108,9 +112,9 @@ update delay action model =
                 Just elap ->
                     let
                         elapsed =
-                            current - elap.since
+                            toFloat (toMillis utc current) - toFloat (toMillis utc elap.since)
                     in
-                    if elapsed < delay then
+                    if elapsed < delayToMillis then
                         ( model
                         , Cmd.none
                         )
