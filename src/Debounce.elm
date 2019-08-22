@@ -30,7 +30,7 @@ _once_, after being given a slew of requests within the delay timeframe.
 
 import Process
 import Task exposing (Task)
-import Time exposing (Posix, toMillis, utc)
+import Time exposing (Posix, posixToMillis)
 
 
 type alias Elapsed a =
@@ -82,7 +82,7 @@ update :
 update delay action model =
     let
         delayToMillis =
-            toFloat (toMillis utc delay)
+            toFloat (posixToMillis delay)
     in
     case action of
         Bounce x ->
@@ -112,7 +112,7 @@ update delay action model =
                 Just elap ->
                     let
                         elapsed =
-                            toFloat (toMillis utc current) - toFloat (toMillis utc elap.since)
+                            toFloat (posixToMillis current) - toFloat (posixToMillis elap.since)
                     in
                     if elapsed < delayToMillis then
                         ( model
