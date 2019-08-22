@@ -3,7 +3,7 @@
     "name": "athanclark/elm-debouncer",
     "summary": "simple method for time-throttling action / message propogation",
     "license": "BSD-3-Clause",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "exposed-modules": [
         "Debounce"
     ],
