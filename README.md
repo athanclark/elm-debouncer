@@ -5,6 +5,7 @@ Use continutations for deboucing!
 ```elm
 import Debounce
 import Task exposing (Task)
+import Time exposing (millisToPosix)
 
 type Msg
   = PingFoo
@@ -35,7 +36,7 @@ update action model =
     PungFoo -> pang model ! [] -- the past tense of ping or something
     DebouncerMsg a ->
       let (newDebouncer, eff) = updateDebouncer
-                                  (500 * millisecond)
+                                  (millisToPosix 500)
                                   a
                                   model.myDebouncer
       in  { model | myDebouncer = newDebouncer }
